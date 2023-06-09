@@ -42,9 +42,9 @@ The app and database are on different hardware machines:
 ### Web App
 - Spring MVC, JDBC: **18 sec**
 - Spring WebFlux, R2DBC Connection: **22.5 sec** (with/without custom LoopResources, with/without warmup)*
-  - ***41.5 sec** in (without custom LoopResources, with (!) warmup) case
+  - *in (without custom LoopResources, with (!) warmup) case: **41.5 sec**
 - Spring WebFlux, R2DBC DatabaseClient: **31.5 sec** (with/without custom LoopResources, with/without warmup)*
-  - ***51 sec** in (without custom LoopResources, with (!) warmup) case
+  - *in (without custom LoopResources, with (!) warmup) case: **51 sec**
 - Spring WebFlux, Vertx: **19 sec**
      
 ## Conclusions
