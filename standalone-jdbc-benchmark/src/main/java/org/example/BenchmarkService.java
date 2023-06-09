@@ -12,6 +12,7 @@ import java.util.stream.LongStream;
 public class BenchmarkService {
 
     private static final int SELECTS_COUNT = 500_000;
+
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(DataSource.CONNECTION_POOL_SIZE);
 
     public static void runBenchmark() {

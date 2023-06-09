@@ -6,6 +6,7 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlClient;
 
 public class DataSource {
+
     private static final SqlClient CLIENT;
 
     static {
