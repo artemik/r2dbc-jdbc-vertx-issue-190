@@ -30,7 +30,7 @@ The app and database are on different hardware machines:
 
 ## Measurements
 - I let each app run for several minutes (for all things to stabilize), and then took average of last 10 durations.
-- Also, because each run fluctuates a bit, and because I'd not like to make strong judgements based on average difference of, for example, +-500ms (which is only ~2% of 20 secs, for example), and instead interested more about magnitute differences, I rounded all results between within ~500ms - that's why, for example, `R2DBC DatabaseClient (with/without custom LoopResources, with/without warmup)` shows a single number in results, even though it was 4 different setup launches.
+- Because each run fluctuates a bit, and because I'd not like to make strong judgements based on +-500ms difference (which is only ~2% of 20 secs, for example), and because interested more about magnitute differences - I rounded all results within ~500ms - that's why, for example, `R2DBC DatabaseClient (with/without custom LoopResources, with/without warmup)` shows a single number in results, even though it was 4 different setup launches.
 
 ----
 ## Results
