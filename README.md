@@ -16,8 +16,12 @@ In web apps, it's a single web request doing all SELECTs, instead of doing bomba
  
 ## Settings
 Sweet spots for my system setup (will be different for yours):
-- 500 000 SELECTs: is many enough to have the total time in the order of several seconds, instead of nano/milliseconds, to avoid small fluctuations due to JVM, GC, network, etc;
-- 200 connection pool size: for larger than that, the JDBC app wasn't becoming faster.
+- **500 000 SELECTs**: is many enough to have the total time in the order of several seconds, instead of nano/milliseconds, to avoid small fluctuations due to JVM, GC, network, etc;
+- **200 connection pool size**: for larger than that, the JDBC app wasn't becoming faster.
+
+Also:
+- **Vertx pipelining is disabled** (set to 1), to make the comparison more fair;
+- Benchamrks are done **with/without custom LoopResources** class. When set, it forces R2DBC to use specific number of threads. The class is copy pasted from https://github.com/r2dbc/r2dbc-pool/issues/190#issuecomment-1566845190 .
 
 ## Hardware
 The app and database are on different hardware machines:
@@ -47,5 +51,5 @@ The app and database are on different hardware machines:
 - In WebFlux (the main usage environment for R2DBC), without custom LoopResources or warmup (it's the default setup as per R2DBC documentation, because those aren't mentioned there), R2DBC shows **22.5 sec** (**25% slower than JDBC**).
 - In WebFlux, most likely you'd use the Spring's DatabaseClient - it shows even slower: **31.5 sec** (**75% slower than JDBC**). However, DatabaseClient is something on top of R2DBC, and even though it's not a full ORM, a more fair comparison would probably be to Hibernate than raw JDBC (Hibernate wasn't tested here). Anyway, DatabaseClient still seems too slow, and I expect Hibernate to perform better (especially with projections/DTOs), even without 1st level Hibernate cache.
 - Weird case - in WebFlux, without custom LoopResources but with (!) warmup (who is supposed to make things faster), the performance drops to **41.5 secs** (**130% or 2.3 times slower than JDBC**).
-- So **in WebFlux, R2DBC definitely performs noticeably slower and seems to be affected somehow by WebFlux environment**, because in standalone cases R2DBC performs close to other drivers.
+- **So in WebFlux, R2DBC definitely performs noticeably slower and seems to be affected somehow by WebFlux environment, because in standalone cases R2DBC performs close to other drivers.**
 - Vertx DB driver performs great in both standalone and WebFlux environments, and close to JDBC (especially in standalone). It doesn't seem to be affected by WebFlux like R2DBC. Though it's still ~19 secs in WebFlux vs 18 secs in standalone.
