@@ -27,7 +27,7 @@ public class DataSourceConfiguration {
                 .option(USER, "postgres")
                 .option(PASSWORD, "postgres")
                 .option(DATABASE, "postgres")
-                //.option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new NioClientEventLoopResources(Runtime.getRuntime().availableProcessors()))
+                .option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new NioClientEventLoopResources(Runtime.getRuntime().availableProcessors()))
                 .build());
     }
 
@@ -46,7 +46,7 @@ public class DataSourceConfiguration {
         ConnectionPool connectionPool = new ConnectionPool(configuration);
 
         System.out.println("Warming up connection pool...");
-        //connectionPool.warmup().block();
+        connectionPool.warmup().block();
         System.out.println("Warmed up connection pool.");
 
         return connectionPool;
