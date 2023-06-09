@@ -62,6 +62,20 @@ The app and database are on different hardware machines:
 | Spring WebFlux, Vertx | **19 sec** (+5.5%)
 
 
+
+| App | Duration |
+| ------------- | ------------- |
+| JDBC | **18 sec** (baseline) |
+| R2DBC Connection | **18.3 sec** (+1.5%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`) |
+| R2DBC DatabaseClient | **19.5 sec** (+8.3%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`) |
+| Vertx | **18.1 sec** (+0.5%) |
+|  |  |
+| Spring MVC, JDBC | **18 sec** (baseline) |
+| Spring WebFlux, R2DBC Connection | **22.5 sec** (+25%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`)* <br> - \***41.5 sec** (+130%) in (without custom LoopResources, with (!) `ConnectionPool.warmup()`) case |
+| Spring WebFlux, R2DBC DatabaseClient | **31.5 sec** (+75%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`)* <br> -\***51 sec** (+183%) in (without custom LoopResources, with (!) `ConnectionPool.warmup()`) case |
+| Spring WebFlux, Vertx | **19 sec** (+5.5%)
+
+
 ----
 ## Conclusions
 - In WebFlux (the main usage environment for R2DBC), without custom LoopResources or `ConnectionPool.warmup()` (it's the default setup as per R2DBC documentation, because those aren't mentioned there), R2DBC shows **22.5 sec** (**25% slower than JDBC**).
