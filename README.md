@@ -13,7 +13,19 @@ There are 6 applications doing the same - run **500 000 SELECTs** and measure th
 
 #### Why?
 In web apps, it's a single web request doing all SELECTs, instead of doing bombarding 500 000 times the endpoint doing a single SELECT, because it helps to avoid measuring network stack latency of the framework on each request, but yet keeps the framework around which, as you see from results, is enough to affect R2DBC performance.
- 
+
+## SQL Schema
+```sql
+CREATE TABLE companies(
+    company_id SERIAL PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL
+);
+
+-- Some sample data generation.
+INSERT INTO companies(company_name)
+    SELECT md5(random()::text) FROM generate_series(1, 100000);
+```
+
 ## Settings
 Sweet spots for my system setup (will be different for yours):
 - **500 000 SELECTs**: is many enough to have the total time in the order of several seconds, instead of nano/milliseconds, to avoid small fluctuations due to JVM, GC, network, etc;
@@ -63,9 +75,9 @@ R2DBC results are a bit tricky to understand, let me explain and highlight somet
 ----
 
 ## Conclusions
-- R2DBC is definitely affected by WebFlux somehow, because there it performs slower than its standalone version by at least 40%.
-- R2DBC is slower than JDBC by at least 42% in WebFlux, and by 1.5% in standalone.
-- Vertx DB driver performs great in both WebFlux and standalone environments, and close to JDBC (especially in standalone). It doesn't seem to be affected by WebFlux like R2DBC. Though it's still ~5% slower in WebFlux (19 secs vs 18 secs in standalone).
+- R2DBC is definitely affected by WebFlux somehow, because there it performs slower than its standalone version by at least **40%**.
+- R2DBC is slower than JDBC by at least **42%** in WebFlux, and by **1.5%** in standalone.
+- Vertx DB driver performs great in both WebFlux and standalone environments, and close to JDBC (especially in standalone). It doesn't seem to be affected by WebFlux like R2DBC. Though it's still **5%** slower in WebFlux (19 secs vs 18 secs in standalone).
 
 Also:
 - WebFlux is the main usage environment for R2DBC, and the default setup there is - without custom LoopResources; without `ConnectionPool.warmup()` - because these things aren't mentioned in the docs. And likely you'll have equal `initialSize` and `maxSize`. In this case, R2DBC will be slower than JDBC by **130%**, i.e. **2.3 times**.
@@ -74,3 +86,4 @@ Also:
 - Weird case - in WebFlux, without custom LoopResources but with (!) `ConnectionPool.warmup()` (who is supposed to make things faster), the performance drops from 25.5 secs to 41.5 secs. Without warmup - its' fine.
 - Without `ConnectionPool.warmup()`, the very first R2DBC run is several times slower than subsequent ones. It's the whole full first run - it doesn't speed up to the end or anything like that. Apparently, it means R2DBC needs zero load to reconfigure something internally. In theory, it means if you chip in your app into high load cluster without warmup (manual, not just R2DBC `ConnectionPool.warmup()`), your app may be very slow forever. It doesn't happen to Vertx.
 
+Lastly, this benchmark is not an all-around drivers comparison, however the R2DBC issues observed here seem to be fundamental and therefore affecting different types of queries/workloads.    
