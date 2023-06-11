@@ -18,7 +18,7 @@ In web apps, it's a single web request doing all SELECTs, instead of doing bomba
 ```sql
 CREATE TABLE companies(
     company_id SERIAL PRIMARY KEY,
-    company_name VARCHAR(255) NOT NULL
+    company_name VARCHAR(255)
 );
 
 -- Some sample data generation.
