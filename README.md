@@ -12,7 +12,7 @@ There are 6 applications doing the same - run **500 000 SELECTs** and measure th
 - **3 web apps** (one per R2DBC, JDBC and Vertx DB clients): endpoint `/benchmark` does a single run and returns duration in response. No automatic repeats - you call it and repeat manually.
 
 #### Why?
-In web apps, it's a single web request doing all SELECTs, instead of doing bombarding 500 000 times the endpoint doing a single SELECT, because it helps to avoid measuring network stack latency of the framework on each request, but yet keeps the framework around which, as you see from results, is enough to affect R2DBC performance.
+In web apps, it's a single web request doing all SELECTs, instead of bombarding 500 000 times the endpoint doing a single SELECT, because it helps to avoid measuring network stack latency of the framework on each request, but yet keeps the framework around which, as you see from results, is enough to affect R2DBC performance.
 
 ## SQL Schema
 ```sql
