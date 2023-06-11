@@ -1,5 +1,5 @@
 # Benchmark of R2DBC vs JDBC vs Vertx
-It shows how slow R2DBC pool is under WebFlux environment. Due to threading/collocation issue: https://github.com/r2dbc/r2dbc-pool/issues/190.
+It shows how slow R2DBC pool is under WebFlux environment due to threading/collocation issue: https://github.com/r2dbc/r2dbc-pool/issues/190.
 
 It compares 3 drivers with PostgreSQL db:
 - [JDBC](https://pages.github.com/) + [HikariCP pool](https://github.com/brettwooldridge/HikariCP);
