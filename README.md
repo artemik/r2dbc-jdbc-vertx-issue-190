@@ -30,29 +30,33 @@ The app and database are on different hardware machines:
 
 ## Measurements
 - I let each app run for several minutes (for all things to stabilize), and then took average of last 10 durations.
-- Because each run fluctuates a bit, and because I'd not like to make strong judgements based on +-500ms difference (which is only ~2% of 20 secs, for example), and because interested more about magnitute differences - I rounded all results within ~500ms - that's why, for example, `R2DBC DatabaseClient (with/without custom LoopResources, with/without warmup)` shows a single number in results, even though it was 4 different setup launches.
+- Because even the average fluctuates a bit, and because I'd not like to make strong judgements based on +-500ms difference (which is only ~2% of 20 secs, for example), and because I'm interested more about magnitude differences - I rounded the results of all R2DBC setups between each other within ~500ms, and highlighted separately only those that differ a lot. That's why all 8 R2DBC setup permutations (with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize`) mostly share a single measurement result, and only a few cases are displayed separately.
 
 ----
 ## Results
+**Note:** In all R2DBC tests below, all 8 setup permutations were tested: with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize` - they're displayed as one shared measurement, only those that differ are displayed separately. 
 ### Standalone
-| App | Duration |
-| ------------- | ------------- |
-| JDBC | **18 sec** (baseline) |
-| R2DBC Connection | **18.3 sec** (+1.5%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`) |
-| R2DBC DatabaseClient | **19.5 sec** (+8.3%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`) |
-| Vertx | **18.1 sec** (+0.5%) |
+
+| App                  | Duration              |
+|----------------------|-----------------------|
+| JDBC                 | **18 sec** (baseline) |
+| R2DBC Connection     | **18.3 sec** (+1.5%)  |
+| R2DBC DatabaseClient | **19.5 sec** (+8.3%)  |
+| Vertx                | **18.1 sec** (+0.5%)  |
 
 ### Web App
-| App | Duration |
-| ------------- | ------------- |
-| Spring MVC, JDBC | **18 sec** (baseline) |
-| Spring WebFlux, R2DBC Connection | **22.5 sec** (+25%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`)* <br> - \***41.5 sec** (+130%) in (without custom LoopResources, with (!) `ConnectionPool.warmup()`) case |
-| Spring WebFlux, R2DBC DatabaseClient | **31.5 sec** (+75%) (with/without custom LoopResources, with/without `ConnectionPool.warmup()`)* <br> -\***51 sec** (+183%) in (without custom LoopResources, with (!) `ConnectionPool.warmup()`) case |
-| Spring WebFlux, Vertx | **19 sec** (+5.5%)
+
+| App                                  | Duration                                                                                                                                                                                                                                                 |
+|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Spring MVC, JDBC                     | **18 sec** (baseline)                                                                                                                                                                                                                                    |
+| Spring WebFlux, R2DBC Connection     | **25.5 sec** (+42%)* <br> - \***41.5 sec** (+130%) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> - \***41.5 sec** (+130%) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`) |
+| Spring WebFlux, R2DBC DatabaseClient | **31.5 sec** (+75%)* <br> -\***51 sec** (+183%) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> -\***51 sec** (+183%) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`)       |
+| Spring WebFlux, Vertx                | **19 sec** (+5.5%)                                                                                                                                                                                                                                       |
+
 ----
 
 ## Conclusions
-- In WebFlux (the main usage environment for R2DBC), without custom LoopResources or `ConnectionPool.warmup()` (it's the default setup as per R2DBC documentation, because those aren't mentioned there), R2DBC shows **22.5 sec** (**25% slower than JDBC**).
+- In WebFlux (the main usage environment for R2DBC), without custom LoopResources or `ConnectionPool.warmup()` (it's the default setup as per R2DBC documentation, because those aren't mentioned there), R2DBC shows **25.5 sec** (**42% slower than JDBC**).
 - In WebFlux, most likely you'd use the Spring's DatabaseClient - it shows even slower: **31.5 sec** (**75% slower than JDBC**). However, DatabaseClient is something on top of R2DBC, and even though it's not a full ORM, a more fair comparison would probably be to Hibernate than raw JDBC (Hibernate wasn't tested here). Anyway, DatabaseClient still seems too slow, and I expect Hibernate to perform better (especially with projections/DTOs), even without 1st level Hibernate cache.
 - Weird case - in WebFlux, without custom LoopResources but with (!) `ConnectionPool.warmup()` (who is supposed to make things faster), the performance drops to **41.5 secs** (**130% or 2.3 times slower than JDBC**).
 - In all cases (especially without `ConnectionPool.warmup()`), the very first run of R2DBC is several times slower. Recovers only on the next run. Apparently it needs zero load to reconfigure something internally. In theory, it means if you chip in your app into high load cluster without warmup (manual, not just R2DBC `ConnectionPool.warmup()`), your app will be very slow forever. It doesn't happen to Vertx.

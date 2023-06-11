@@ -1,5 +1,7 @@
 package org.example;
 
+import io.r2dbc.pool.ConnectionPool;
+import io.r2dbc.spi.Connection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
