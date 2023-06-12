@@ -69,7 +69,7 @@ The app and database are on different hardware machines:
 R2DBC results are a bit tricky to understand, let me explain and highlight something:
 1. First of all, in WebFlux, all R2DBC setups are slower than its standalone counterpart by at least ~40% (25.5 sec vs 18.3 sec).
 2. In WebFlux, without custom LoopResources, you MUST NOT run warmup(), otherwise things are slow.
-3. In WebFlux, the choice of equal vs non-equal initialSize and maxSize affects only when without custom LoopResources and without warmup - must be non-equal, otherwise things are slow. In all other cases, this choice doesn't matter.
+3. In WebFlux, the choice of equal vs non-equal initialSize and maxSize matters only when without custom LoopResources and without warmup - must be non-equal, otherwise things are slow. In all other cases, this choice doesn't matter.
 4. In standalone, all R2DBC settings perform the same.
 
 ----
