@@ -132,10 +132,10 @@ previous benchmarks above as well, but it doesn't seem to cause performance issu
 
 **R2DBC**
  - **Threads**
-   - with LoopResources: as many as specified (in my case 8 = CPU_CORES);
+   - with LoopResources: **8** threads (as many as specified, in my case it's CPU_CORES);
    - without LoopResources:
-     - `initialSize` !=  `maxSize`: 2 threads;
-     - `initialSize` ==  `maxSize`: 1 thread.
+     - `initialSize` !=  `maxSize`: **2** threads;
+     - `initialSize` ==  `maxSize`: **1** thread.
  - **Connections**
    - all 100 connections were active in parallel; 
    - but, without warmup() R2DBC suffered on the first run - before all SELECT Monos were completed, it used only ~40 out of 100 connections (exact number was different on each app launch, but it remained unchanged during the first run), and TPS dropped accordingly. Only on the next run all 100 connections became in use.     
