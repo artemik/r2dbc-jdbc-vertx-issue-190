@@ -79,7 +79,7 @@ R2DBC results are a bit tricky to understand, let me explain and highlight somet
 4. In standalone, all R2DBC settings perform the same.
 
 ## Results (SELECT 100 records)
-Config: 250 000 SELECTS, 100 connection pool size.
+
 ### Standalone
 Not tested. WebFlux results show it's not needed.
 
@@ -101,7 +101,7 @@ Note: for readability, + means with, - means without.
 | **-** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | **120 sec** (+135% = 2.35 times)  |
 
 ### How to Interpret R2DBC Results
-1. Unlike with fast single-record selects, with slower SELECTs R2DBC slowness becomes unnoticeable compared to the total processing time probably, so R2DBC has 4 setups where it performs normally (similarly to JDBC and Vertx) with 51 secs.
+1. Unlike with fast single-record selects, longer DB processing time of multi-record SELECTs probably makes R2DBC slowness itself unnoticeable, compared to the total processing time. So R2DBC has 4 setups where it performs normally (similarly to JDBC and Vertx) with 51 secs.
 2. Lack of custom LoopResources drops performance ~2.17 times:
    - and additionally having `initialSize` == `maxSize` drops it a bit more: ~2.35 times.
 3. R2DBC performs the worst in the default setup (-LoopResources, -warmup(), `initialSize`==`maxSize`).
