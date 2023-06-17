@@ -56,7 +56,7 @@ public class BenchmarkService {
     }
 
     private Mono<Long> selectCompanyByIdWithPause(Long id) {
-        return databaseClient.sql("SELECT *, pg_sleep(10) FROM companies WHERE company_id = $1")
+        return databaseClient.sql("SELECT *, pg_sleep(2) FROM companies WHERE company_id = $1")
                 .bind(0, id)
                 .fetch()
                 .first()

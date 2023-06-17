@@ -15,6 +15,7 @@ public class BenchmarkService {
         List<Mono<Long>> dbCallMonos = LongStream.rangeClosed(1, SELECTS_COUNT)
                 .boxed()
                 .map(i -> selectCompanyById(10L)) // Hardcoded the same id 10. Or use "i" for more random.
+                //.map(i -> selectCompanyByIdWithPause(10L)) // Uncomment to test connections concurrency.
                 .toList();
 
         executeAllAndPrintDuration(dbCallMonos);
@@ -31,6 +32,14 @@ public class BenchmarkService {
 
     private static Mono<Long> selectCompanyById(Long id) {
         return DataSource.getDatabaseClient().sql("SELECT * FROM companies WHERE company_id = $1")
+                .bind(0, id)
+                .fetch()
+                .first()
+                .map(row -> ((Number) row.get("company_id")).longValue());
+    }
+
+    private static Mono<Long> selectCompanyByIdWithPause(Long id) {
+        return DataSource.getDatabaseClient().sql("SELECT *, pg_sleep(2) FROM companies WHERE company_id = $1")
                 .bind(0, id)
                 .fetch()
                 .first()
