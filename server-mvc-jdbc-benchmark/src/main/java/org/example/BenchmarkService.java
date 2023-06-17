@@ -27,6 +27,7 @@ public class BenchmarkService {
         List<Callable<Long>> dbCallCallables = LongStream.rangeClosed(1, SELECTS_COUNT)
                 .boxed()
                 .map(i -> (Callable<Long>) () -> selectCompanyById(10L)) // Hardcoded the same id 10. Or use "i" for more random.
+                //.map(i -> (Callable<Long>) () -> selectCompanies()) // Uncomment to test multiple records select.
                 .toList();
 
         return executeAllAndGetDuration(dbCallCallables);
@@ -62,6 +63,23 @@ public class BenchmarkService {
             try (ResultSet rs = statement.executeQuery()) {
                 rs.next(); // Single row is always expected.
                 return rs.getLong(1); // Returns company_id.
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private long selectCompanies() {
+        try (
+                Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT * FROM companies LIMIT 100");
+        ) {
+            try (ResultSet rs = statement.executeQuery()) {
+                long lastId = 0; // Just to imitate looping over all results.
+                while (rs.next()) {
+                    lastId = rs.getLong(1); // Returns company_id.
+                }
+                return lastId;
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

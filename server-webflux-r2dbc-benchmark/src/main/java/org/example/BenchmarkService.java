@@ -32,6 +32,8 @@ public class BenchmarkService {
         List<Mono<Long>> dbCallMonos = LongStream.rangeClosed(1, SELECTS_COUNT)
                 .boxed()
                 .map(i -> selectCompanyById(10L)) // Hardcoded the same id 10. Or use "i" for more random.
+                //.map(i -> selectCompanyByIdWithPause(10L)) // Uncomment to test connections concurrency.
+                //.map(i -> selectCompanies()) // Uncomment to test multiple records select.
                 .toList();
 
         // Because timeStartNs is defined here, the duration time counts from now. However, monos execution will start
@@ -50,6 +52,23 @@ public class BenchmarkService {
                 .bind(0, id)
                 .fetch()
                 .first()
+                .map(row -> ((Number) row.get("company_id")).longValue());
+    }
+
+    private Mono<Long> selectCompanyByIdWithPause(Long id) {
+        return databaseClient.sql("SELECT *, pg_sleep(10) FROM companies WHERE company_id = $1")
+                .bind(0, id)
+                .fetch()
+                .first()
+                .map(row -> ((Number) row.get("company_id")).longValue());
+    }
+
+
+    private Mono<Long> selectCompanies() {
+        return databaseClient.sql("SELECT * FROM companies LIMIT 100000")
+                .fetch()
+                .all()
+                .last()
                 .map(row -> ((Number) row.get("company_id")).longValue());
     }
 

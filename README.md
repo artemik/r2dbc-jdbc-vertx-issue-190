@@ -7,12 +7,14 @@ It compares 3 drivers with PostgreSQL db:
 - [Vertx PG reactive client](https://github.com/eclipse-vertx/vertx-sql-client), no external pool needed.
 
 ## Benchmark Scenario
-There are 6 applications doing the same - run **500 000 SELECTs** and measure the total time spent. Each SELECT returns the same (for max stability) **single record by ID**. All SELECTs are executed with concurrency equal to max DB connection pool size:
+There are 6 applications doing the same - run lots of **SELECTs** and measure the total time spent. All SELECTs are executed with concurrency equal to max DB connection pool size:
 - **3 standalone apps** (one per R2DBC, JDBC and Vertx DB clients): command line app, prints the duration on each run and repeats it 50 times;
 - **3 web apps** (one per R2DBC, JDBC and Vertx DB clients): endpoint `/benchmark` does a single run and returns duration in response. No automatic repeats - you call it and repeat manually.
 
-#### Why?
-In web apps, it's a single web request doing all SELECTs, instead of bombarding 500 000 times the endpoint doing a single SELECT, because it helps to avoid measuring network stack latency of the framework on each request, but yet keeps the framework around which, as you see from results, is enough to affect R2DBC performance.
+There are 2 separate tests - single-record SELECT, and multi-record SELECT.
+
+#### Web Apps Note
+In web app tests, it's a single web request doing all SELECTs, instead of bombarding N times the endpoint doing a single SELECT, because it helps to avoid measuring network stack latency of the framework on each request, but yet keeps the framework around which, as you see from results, is enough to affect R2DBC performance.
 
 ## SQL Schema
 ```sql
@@ -28,12 +30,16 @@ INSERT INTO companies(company_name)
 
 ## Settings
 Sweet spots for my system setup (will be different for yours):
-- **500 000 SELECTs**: is many enough to have the total time in the order of several seconds, instead of nano/milliseconds, to avoid small fluctuations due to JVM, GC, network, etc;
-- **200 connection pool size**: for larger than that, the JDBC app wasn't becoming faster.
+- single-record SELECTs:
+  - **500 000 SELECTs**: is many enough to have the total time in the order of several seconds, instead of nano/milliseconds, to avoid small fluctuations due to JVM, GC, network, etc;
+  - **200 connection pool size**: for larger than that, the JDBC app wasn't becoming faster.
+- multi-record SELECTs:
+  - **250 000 SELECTs**;
+  - **100 connection pool size**.
 
 Also:
 - **Vertx pipelining is disabled** (set to 1), to make the comparison more fair;
-- Benchamrks are done **with/without custom LoopResources** class. When set, it forces R2DBC to use specific number of threads. The class is copy pasted from https://github.com/r2dbc/r2dbc-pool/issues/190#issuecomment-1566845190 .
+- Benchamrks are done **with/without custom LoopResources** class (with 8 threads = CPU cores). When set, it forces R2DBC to use specific number of threads. The class is copy pasted from https://github.com/r2dbc/r2dbc-pool/issues/190#issuecomment-1566845190 .
 
 ## Hardware
 The app and database are on different hardware machines:
@@ -45,7 +51,7 @@ The app and database are on different hardware machines:
 - Because even the average fluctuates a bit, and because I'd not like to make strong judgements based on +-500ms difference (which is only ~2% of 20 secs, for example), and because I'm interested more about magnitude differences - I rounded the results of all R2DBC setups between each other within ~500ms, and highlighted separately only those that differ a lot. That's why all 8 R2DBC setup permutations (with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize`) mostly share a single measurement result, and only a few cases are displayed separately.
 
 ----
-## Results
+## Results (SELECT single record)
 **Note:** In all R2DBC tests below, all 8 setup permutations were tested: with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize` - they're displayed as one shared measurement, only those that differ are displayed separately. 
 ### Standalone
 
@@ -58,12 +64,12 @@ The app and database are on different hardware machines:
 
 ### Web App
 
-| App                                  | Duration                                                                                                                                                                                                                                                 |
-|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Spring MVC, JDBC                     | **18 sec** (baseline)                                                                                                                                                                                                                                    |
+| App                                  | Duration                                                                                                                                                                                                                                                                                      |
+|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Spring MVC, JDBC                     | **18 sec** (baseline)                                                                                                                                                                                                                                                                         |
 | Spring WebFlux, R2DBC Connection     | **25.5 sec** (+42% = 1.42 times)* <br> - \***41.5 sec** (+130% = 2.3 times) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> - \***41.5 sec** (+130% = 2.3 times) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`) |
-| Spring WebFlux, R2DBC DatabaseClient | **31.5 sec** (+75% = 1.75 times)* <br> -\***51 sec** (+183% = 2.83 times) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> -\***51 sec** (+183% = 2.83 times) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`)       |
-| Spring WebFlux, Vertx                | **19 sec** (+5.5%)                                                                                                                                                                                                                                       |
+| Spring WebFlux, R2DBC DatabaseClient | **31.5 sec** (+75% = 1.75 times)* <br> -\***51 sec** (+183% = 2.83 times) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> -\***51 sec** (+183% = 2.83 times) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`)     |
+| Spring WebFlux, Vertx                | **19 sec** (+5.5%)                                                                                                                                                                                                                                                                            |
 
 ### How to Interpret R2DBC Results
 R2DBC results are a bit tricky to understand, let me explain and highlight something:
@@ -72,9 +78,87 @@ R2DBC results are a bit tricky to understand, let me explain and highlight somet
 3. In WebFlux, the choice of equal vs non-equal initialSize and maxSize matters only when without custom LoopResources and without warmup - must be non-equal, otherwise things are slow. In all other cases, this choice doesn't matter.
 4. In standalone, all R2DBC settings perform the same.
 
+## Results (SELECT 100 records)
+Config: 250 000 SELECTS, 100 connection pool size.
+### Standalone
+Not tested. WebFlux results show it's not needed.
+
+### Web App
+Both **MVC JDBC** and **WebFlux Vertx**: **51 sec** (baseline).
+
+**R2DBC** results are more diverse, so I provide a table specifically for it with all setups. I only tested DatabaseClient.
+Note: for readability, + means with, - means without. 
+
+| R2DBC DatabaseClient Setup                                             | Duration                          |
+|------------------------------------------------------------------------|-----------------------------------|
+| **+** LoopResources, **+** `warmup()`, `initialSize` **!=** `maxSize`  | **51 sec**                        |
+| **+** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **51 sec**                        |
+| **+** LoopResources, **-** `warmup()`, `initialSize` **!=**  `maxSize` | **51 sec**                        |
+| **+** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | **51 sec**                        |
+| **-** LoopResources, **+** `warmup()`, `initialSize` **!=**  `maxSize` | **111 sec** (+117% = 2.17 times)  |
+| **-** LoopResources, **-** `warmup()`, `initialSize` **!=**  `maxSize` | **111 sec** (+117% = 2.17 times)  |
+| **-** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **120 sec** (+135% = 2.35 times)  |
+| **-** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | **120 sec** (+135% = 2.35 times)  |
+
+### How to Interpret R2DBC Results
+1. Unlike with fast single-record selects, with slower SELECTs R2DBC slowness becomes unnoticeable compared to the total processing time probably, so R2DBC has 4 setups where it performs normally (similarly to JDBC and Vertx) with 51 secs.
+2. Lack of custom LoopResources drops performance ~2.17 times:
+   - and additionally having `initialSize` == `maxSize` drops it a bit more: ~2.35 times.
+3. R2DBC performs the worst in the default setup (-LoopResources, -warmup(), `initialSize`==`maxSize`).
+
+## Results (Connections concurrency / Threading)
+
+In all the tests above, it was visible on DB side monitoring that R2DBC **established** all `maxSize` 
+connections just fine, but it wasn't really clear how many of them were concurrently **active**,
+because the queries were too fast to build up concurrent processing on DB side. 
+
+You saw 4 cases with multi-record SELECTs where R2DBC performed as fast as JDBC and Vertx, but from
+single-record SELECT tests we know R2DBC is slower, so longer DB processing time of multi-record
+SELECTs just helps to hide R2DBC slowness itself. Moreover, those multi-record SELECTs were still too
+fast to simulate some heavy long query.
+
+It all means that we need to make a test specifically for concurrent connections usage. To do that,
+I just modified the single-record SELECT to select `pg_sleep(10)` as well, to simulate 10 secs
+processing time. It means in ideal case, for 100 connections pool size, for example, all 100 sessions should
+become seen as active, proving that all connections are used. Let's see.
+
+I also included observations on threading usage. It corresponds to what I saw in single/multi record
+SELECT tests as well.
+
+### Web App
+
+**Vertx** - used all 100 active connections. As for threading, it used only 1 thread, like in all
+previous benchmarks above as well, but it doesn't seem to cause performance issues.
+
+**R2DBC** results are in the table below. Note: the table sorting below corresponds to the table above, for easier cross-checking.
+
+| R2DBC DatabaseClient Setup                                             | Active Connections | Threads                    |
+|------------------------------------------------------------------------|--------------------|----------------------------|
+| **+** LoopResources, **+** `warmup()`, `initialSize` **!=** `maxSize`  | **100**            | **8** = LoopResources.threads  |
+| **+** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **100**            | **8** = LoopResources.threads  |
+| **+** LoopResources, **-** `warmup()`, `initialSize` **!=**  `maxSize` | ~**40** / 100      | **8** = LoopResources.threads  |
+| **+** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | ~**40** / 100      | **8** = LoopResources.threads  |
+| **-** LoopResources, **+** `warmup()`, `initialSize` **!=**  `maxSize` | **100**            | **2** (one doing the most job) |
+| **-** LoopResources, **-** `warmup()`, `initialSize` **!=**  `maxSize` | ~**40** / 100      | **2** (one doing the most job) |
+| **-** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **100**            | **1**                          |
+| **-** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | ~**40** / 100      | **1**                          |
+
+### How to Interpret R2DBC Results
+1. Without warmup(), R2DBC uses only ~40 connections out of 100. The exact number was different on each application start. But during the run, the number remained the same, not increasing even after the queries were finishing and starting on each 10 secs.  
+2. With custom LoopResources, R2DBC uses as many threads as specified in LoopResources. In my case it was 8, equal to CPU cores.
+3. Without custom LoopResources:
+   - `initialSize` != `maxSize` makes R2DBC use only 2 threads;
+   - `initialSize` == `maxSize` makes R2DBC use only 1 thread.
+4. Vertx used all 100 active connections. As for threading, it used only 1 thread, like in all previous benchmarks above as well, but it doesn't seem to cause performance issues.
+5. It's not in the benchmarks, but in addition to triggering SELECTs from the single http request, I also separately tested triggering them from multiple http requests bombarded from load testing tool, to simulate query calls from different WebFlux threads - R2DBC showed the same threading usage like in the table above.
+   - Vertx, however, used multiple threads (~ CPU cores) just fine.
+
+
 ----
 
 ## Conclusions
+
+### Single-record SELECT
 - R2DBC is definitely affected by WebFlux somehow, because there it performs slower than its standalone version by at least **40%**.
 - R2DBC is slower than JDBC by at least **42%** in WebFlux, and by **1.5%** in standalone.
 - Vertx DB driver performs great in both WebFlux and standalone environments, and close to JDBC (especially in standalone). It doesn't seem to be affected by WebFlux like R2DBC. Though it's still **5%** slower in WebFlux (19 secs vs 18 secs in standalone).
@@ -85,5 +169,9 @@ Also:
   - However, DatabaseClient is something on top of R2DBC, and even though it's not a full ORM, a more fair comparison would probably be to Hibernate than raw JDBC (Hibernate wasn't tested here). Anyway, DatabaseClient still seems too slow, and I expect Hibernate to perform better (especially with projections/DTOs), even without 1st level Hibernate cache.
 - Weird case - in WebFlux, without custom LoopResources but with (!) `ConnectionPool.warmup()` (who is supposed to make things faster), the performance drops from 25.5 secs to 41.5 secs. Without warmup - it's fine.
 - Without `ConnectionPool.warmup()`, the very first R2DBC run is several times slower than subsequent ones. It's the whole full first run - it doesn't speed up to the end or anything like that (even though I see all connections being established on DB side). Apparently, it means R2DBC needs zero load to reconfigure something internally. In theory, it means if you chip in your app into high load cluster without warmup (manual, not just R2DBC `ConnectionPool.warmup()`), your app may be very slow forever. It doesn't happen to Vertx.
+
+### Multi-record SELECT
+- R2DBC is affected by WebFlux here as well. Details are mentioned in "How to Interpret R2DBC Results" sections above.
+- Vertx has no issues.
 
 Lastly, this benchmark is not an all-around drivers comparison, however the R2DBC issues observed here seem to be fundamental and therefore affecting different types of queries/workloads.    

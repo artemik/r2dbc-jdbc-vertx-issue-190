@@ -1,5 +1,6 @@
 package org.example;
 
+import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ public class BenchmarkService {
         List<Mono<Long>> dbCallMonos = LongStream.rangeClosed(1, SELECTS_COUNT)
                 .boxed()
                 .map(i -> selectCompanyById(10L)) // Hardcoded the same id 10. Or use "i" for more random.
+                //.map(i -> selectCompanies()) // Uncomment to test multiple records select.
                 .toList();
 
         // Same comment like in R2DBC sample:
@@ -46,6 +48,22 @@ public class BenchmarkService {
                 .toCompletionStage()
                 .toCompletableFuture()
                 .thenApplyAsync(rows -> rows.iterator().next().getLong(0)) // Returns company_id.
+        );
+    }
+
+    private Mono<Long> selectCompanies() {
+        return Mono.fromFuture(() -> sqlClient
+                .preparedQuery("SELECT * FROM companies LIMIT 100")
+                .execute()
+                .toCompletionStage()
+                .toCompletableFuture()
+                .thenApplyAsync(rows -> {
+                    long lastId = 0; // Just to imitate looping over all results.
+                    for (Row row : rows) {
+                        lastId = row.getLong(0);
+                    }
+                    return lastId;
+                }) // Returns company_id.
         );
     }
 }
