@@ -89,7 +89,7 @@ Both **MVC JDBC** and **WebFlux Vertx**: **51 sec** (baseline).
 **R2DBC** results are more diverse, so I provide a table specifically for it with all setups. I only tested DatabaseClient.
 Note: for readability, + means with, - means without. 
 
-| R2DBC DatabaseClient Setup                                             | Duration                          |
+| WebFlux R2DBC DatabaseClient Setup                                     | Duration                          |
 |------------------------------------------------------------------------|-----------------------------------|
 | **+** LoopResources, **+** `warmup()`, `initialSize` **!=** `maxSize`  | **51 sec**                        |
 | **+** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **51 sec**                        |
@@ -125,6 +125,9 @@ become seen as active, proving that all connections are used. Let's see.
 I also included observations on threading usage. It corresponds to what I saw in single/multi record
 SELECT tests as well.
 
+### Standalone
+Not tested. WebFlux results seem to be enough.
+
 ### Web App
 
 **Vertx** - used all 100 active connections. As for threading, it used only 1 thread, like in all
@@ -132,7 +135,7 @@ previous benchmarks above as well, but it doesn't seem to cause performance issu
 
 **R2DBC** results are in the table below. Note: the table sorting below corresponds to the table above, for easier cross-checking.
 
-| R2DBC DatabaseClient Setup                                             | Active Connections | Threads                    |
+| WebFlux R2DBC DatabaseClient Setup                                     | Active Connections | Threads                    |
 |------------------------------------------------------------------------|--------------------|----------------------------|
 | **+** LoopResources, **+** `warmup()`, `initialSize` **!=** `maxSize`  | **100**            | **8** = LoopResources.threads  |
 | **+** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **100**            | **8** = LoopResources.threads  |
