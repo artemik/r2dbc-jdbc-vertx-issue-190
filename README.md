@@ -143,7 +143,7 @@ previous benchmarks above as well, but it doesn't seem to cause performance issu
 ### How to Interpret R2DBC Results
 1. Because R2DBC underutilizes connections on first runs, it's a problem, for example, for specific cases where you have a cron job starting your app to run a batch of Mono queries in one go, and then shutdown - you'll must use warmup() in this case.   
 2. Otherwise, connections usage is fine and I didn't see, for example, R2DBC being stuck with a single connection (regardless of how many threads were used).  
-2. Threading - not clear whether it's an issue, because Vertx, for example, was able to perform fine even with 1 thread.
+2. Threading - not clear whether it's an issue, because even with LoopResources R2DBC performed slow in single-record SELECTs for example. And also Vertx, for example, was able to perform fine even with 1 thread in all tests.
 5. It's not in the benchmarks, but in addition to triggering SELECTs from the single http request, I also separately tested triggering them from multiple http requests bombarded from a load testing tool, to simulate query calls triggered from different WebFlux threads - R2DBC showed the same threading usage like mentioned above.
    - Vertx, however, used multiple threads (~ CPU cores) just fine.
 
