@@ -44,7 +44,15 @@ public class BenchmarkService {
         //   2. Otherwise, if it's slow, it'd be another indicator something is wrong in WebFlux+R2DBC setup.
         // Take it into account, if you decide to add more logic when playing with it.
         long timeStartNs = System.nanoTime();
-        return Mono.zip(dbCallMonos, objects -> TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStartNs));
+        Mono<Long> zip = Mono.zip(dbCallMonos, objects -> TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStartNs));
+        zip.subscribe(durationMs -> {
+            Long seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs);
+            durationMs = durationMs - TimeUnit.SECONDS.toMillis(seconds);
+
+            System.out.println("select " + SELECTS_COUNT + " in " + seconds + "." + durationMs + "s.");
+        });
+
+        return zip;
     }
 
     private Mono<Long> selectCompanyById(Long id) {

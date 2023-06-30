@@ -14,7 +14,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 public class DataSource {
 
-    private static final int CONNECTION_POOL_SIZE = 200;
+    private static final int CONNECTION_POOL_SIZE = 100;
 
     private static final ConnectionPool CONNECTION_POOL;
 
@@ -24,7 +24,8 @@ public class DataSource {
         ConnectionFactory connectionFactory = ConnectionFactories.get(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "postgresql")
                 .option(PROTOCOL, "postgresql")
-                .option(HOST, "192.168.1.120")
+//                .option(HOST, "192.168.1.120")
+                .option(HOST, "localhost")
                 .option(PORT, 5432)
                 .option(USER, "postgres")
                 .option(PASSWORD, "postgres")
