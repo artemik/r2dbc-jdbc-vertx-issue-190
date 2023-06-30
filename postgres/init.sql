@@ -1,12 +1,12 @@
 -- Create a mock table
-CREATE TABLE companies (
-  id SERIAL PRIMARY KEY,
-  company_id NUMERIC(19),
-  name VARCHAR(255)
+CREATE TABLE companies(
+    company_id SERIAL PRIMARY KEY,
+    company_name VARCHAR(255)
 );
 
-INSERT INTO companies (company_id, name) VALUES (10, 'John Doe');
-INSERT INTO companies (company_id, name) VALUES (11, 'Jane Smith');
+-- Some sample data generation.
+INSERT INTO companies(company_name)
+    SELECT md5(random()::text) FROM generate_series(1, 100000);
 
 CREATE TABLE insert_table (
   id SERIAL PRIMARY KEY,
