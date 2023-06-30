@@ -15,7 +15,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 @Configuration
 public class DataSourceConfiguration {
 
-    private static final int CONNECTION_POOL_SIZE = 200;
+    private static final int CONNECTION_POOL_SIZE = 100;
 
     @Bean
     public ConnectionFactory connectionFactory() {
@@ -46,7 +46,7 @@ public class DataSourceConfiguration {
         ConnectionPool connectionPool = new ConnectionPool(configuration);
 
         System.out.println("Warming up connection pool...");
-        connectionPool.warmup().block();
+        connectionPool.warmup().subscribe();
         System.out.println("Warmed up connection pool.");
 
         return connectionPool;
