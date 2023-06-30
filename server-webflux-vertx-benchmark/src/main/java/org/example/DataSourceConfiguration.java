@@ -14,6 +14,7 @@ public class DataSourceConfiguration {
     public SqlClient sqlClient() {
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setPort(5432)
+//                .setHost("192.168.1.120")
                 .setHost("localhost")
                 .setDatabase("postgres")
                 .setUser("postgres")

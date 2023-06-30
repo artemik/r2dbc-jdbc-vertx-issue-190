@@ -22,6 +22,7 @@ public class DataSourceConfiguration {
         return ConnectionFactories.get(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "postgresql")
                 .option(PROTOCOL, "postgresql")
+//                .option(HOST, "192.168.1.120")
                 .option(HOST, "localhost")
                 .option(PORT, 5432)
                 .option(USER, "postgres")
