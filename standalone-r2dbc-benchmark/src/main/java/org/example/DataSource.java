@@ -14,7 +14,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 public class DataSource {
 
-    private static final int CONNECTION_POOL_SIZE = 200;
+    private static final int CONNECTION_POOL_SIZE = 100;
 
     private static final ConnectionPool CONNECTION_POOL;
 

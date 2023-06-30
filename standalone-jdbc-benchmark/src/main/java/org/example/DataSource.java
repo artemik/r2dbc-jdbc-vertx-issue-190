@@ -8,7 +8,7 @@ import java.sql.SQLException;
 
 public class DataSource {
 
-    public static final int CONNECTION_POOL_SIZE = 200;
+    public static final int CONNECTION_POOL_SIZE = 100;
 
     private static final HikariDataSource DATA_SOURCE;
 

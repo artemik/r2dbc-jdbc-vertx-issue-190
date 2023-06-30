@@ -10,7 +10,7 @@ import javax.sql.DataSource;
 @Configuration
 public class DataSourceConfiguration {
 
-    public static final int CONNECTION_POOL_SIZE = 200;
+    public static final int CONNECTION_POOL_SIZE = 100;
 
     @Bean
     public DataSource dataSource() {
