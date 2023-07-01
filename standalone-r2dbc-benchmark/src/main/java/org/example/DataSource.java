@@ -9,6 +9,8 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import org.reactivestreams.Publisher;
 import org.springframework.r2dbc.core.DatabaseClient;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
@@ -31,6 +33,7 @@ public class DataSource {
                 .option(PASSWORD, "postgres")
                 .option(DATABASE, "postgres")
                 .option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new NioClientEventLoopResources(Runtime.getRuntime().availableProcessors()))
+//                .option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new SimpleEventLoopResource())
                 .build());
 
         ConnectionPoolConfiguration configuration = ConnectionPoolConfiguration.builder(connectionFactory)
@@ -46,8 +49,9 @@ public class DataSource {
         CONNECTION_POOL = new ConnectionPool(configuration);
 
         System.out.println("Warming up connection pool...");
-        CONNECTION_POOL.warmup().block();
-        System.out.println("Warmed up connection pool.");
+        CONNECTION_POOL.warmup()
+                .subscribeOn(Schedulers.single())
+                .subscribe( i -> System.out.println("Warmed up connection pool." + i) );
 
         DATABASE_CLIENT = DatabaseClient.builder()
                 .connectionFactory(CONNECTION_POOL)
