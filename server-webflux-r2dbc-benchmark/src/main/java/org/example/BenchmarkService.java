@@ -46,7 +46,7 @@ public class BenchmarkService {
         long timeStartNs = System.nanoTime();
         Mono<Long> zip = Mono.zip(dbCallMonos, objects -> TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStartNs));
         zip.subscribe(durationMs -> {
-            Long seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs);
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs);
             durationMs = durationMs - TimeUnit.SECONDS.toMillis(seconds);
 
             System.out.println("select " + SELECTS_COUNT + " in " + seconds + "." + durationMs + "s.");
