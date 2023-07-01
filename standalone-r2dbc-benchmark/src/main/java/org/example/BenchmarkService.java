@@ -25,9 +25,12 @@ public class BenchmarkService {
         long timeStartNs = System.nanoTime();
 
         Mono<Long> zip = Mono.zip(dbCallMonos, results -> TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStartNs));
-        Long durationMs = zip.block();
+        zip.subscribe(durationMs -> {
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs);
+            durationMs = durationMs - TimeUnit.SECONDS.toMillis(seconds);
 
-        System.out.println(durationMs);
+            System.out.println("select " + SELECTS_COUNT + " in " + seconds + "." + durationMs + "s.");
+        });
     }
 
     private static Mono<Long> selectCompanyById(Long id) {

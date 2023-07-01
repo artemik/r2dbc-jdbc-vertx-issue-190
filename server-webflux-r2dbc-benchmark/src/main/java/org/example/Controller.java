@@ -14,6 +14,7 @@ public class Controller {
     /**
      *
      * @return benchmark run duration Mono in milliseconds
+     * curl --location 'http://localhost:8080/benchmark'
      */
     @GetMapping("/benchmark")
     public Mono<Long> runBenchmark() {

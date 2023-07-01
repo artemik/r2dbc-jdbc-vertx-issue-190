@@ -8,13 +8,14 @@ import java.sql.SQLException;
 
 public class DataSource {
 
-    public static final int CONNECTION_POOL_SIZE = 200;
+    public static final int CONNECTION_POOL_SIZE = 100;
 
     private static final HikariDataSource DATA_SOURCE;
 
     static {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:postgresql://192.168.1.120:5432/postgres");
+//        config.setJdbcUrl("jdbc:postgresql://192.168.1.120:5432/postgres");
+        config.setJdbcUrl("jdbc:postgresql://localhost:5432/postgres");
         config.setUsername("postgres");
         config.setPassword("postgres");
         config.setDriverClassName("org.postgresql.Driver");

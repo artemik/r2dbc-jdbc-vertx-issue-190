@@ -15,19 +15,21 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 @Configuration
 public class DataSourceConfiguration {
 
-    private static final int CONNECTION_POOL_SIZE = 200;
+    private static final int CONNECTION_POOL_SIZE = 100;
 
     @Bean
     public ConnectionFactory connectionFactory() {
         return ConnectionFactories.get(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "postgresql")
                 .option(PROTOCOL, "postgresql")
-                .option(HOST, "192.168.1.120")
+//                .option(HOST, "192.168.1.120")
+                .option(HOST, "localhost")
                 .option(PORT, 5432)
                 .option(USER, "postgres")
                 .option(PASSWORD, "postgres")
                 .option(DATABASE, "postgres")
-                .option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new NioClientEventLoopResources(Runtime.getRuntime().availableProcessors()))
+                .option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new SimpleEventLoopResource())
+//                .option(PostgresqlConnectionFactoryProvider.LOOP_RESOURCES, new NioClientEventLoopResources(Runtime.getRuntime().availableProcessors()))
                 .build());
     }
 
@@ -46,7 +48,7 @@ public class DataSourceConfiguration {
         ConnectionPool connectionPool = new ConnectionPool(configuration);
 
         System.out.println("Warming up connection pool...");
-        connectionPool.warmup().block();
+        connectionPool.warmup().subscribe();
         System.out.println("Warmed up connection pool.");
 
         return connectionPool;
