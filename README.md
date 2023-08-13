@@ -2,7 +2,7 @@
 It shows how slow R2DBC pool is under WebFlux environment due to threading/collocation issue: https://github.com/r2dbc/r2dbc-pool/issues/190.
 
 It compares 3 drivers with PostgreSQL db:
-- [JDBC](https://pages.github.com/) + [HikariCP pool](https://github.com/brettwooldridge/HikariCP);
+- [JDBC](https://github.com/pgjdbc/pgjdbc) + [HikariCP pool](https://github.com/brettwooldridge/HikariCP);
 - [R2DBC](https://github.com/pgjdbc/r2dbc-postgresql) + [R2DBC pool](https://github.com/r2dbc/r2dbc-pool/);
 - [Vertx PG reactive client](https://github.com/eclipse-vertx/vertx-sql-client), no external pool needed.
 
