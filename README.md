@@ -18,13 +18,13 @@ In web app tests, it's a single web request doing all SELECTs, instead of bombar
 
 ## SQL Schema
 ```sql
-CREATE TABLE companies(
+CREATE TABLE companies (
     company_id SERIAL PRIMARY KEY,
     company_name VARCHAR(255)
 );
 
 -- Some sample data generation.
-INSERT INTO companies(company_name)
+INSERT INTO companies (company_name)
     SELECT md5(random()::text) FROM generate_series(1, 100000);
 ```
 
@@ -64,12 +64,12 @@ The app and database are on different hardware machines:
 
 ### Web App
 
-| App                                  | Duration                                                                                                                                                                                                                                                                                      |
-|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Spring MVC, JDBC                     | **18 sec** (baseline)                                                                                                                                                                                                                                                                         |
-| Spring WebFlux, R2DBC Connection     | **25.5 sec** (+42% = 1.42 times)* <br> - \***41.5 sec** (+130% = 2.3 times) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> - \***41.5 sec** (+130% = 2.3 times) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`) |
-| Spring WebFlux, R2DBC DatabaseClient | **31.5 sec** (+75% = 1.75 times)* <br> -\***51 sec** (+183% = 2.83 times) (without custom LoopResources; with (!) `ConnectionPool.warmup()`) <br> -\***51 sec** (+183% = 2.83 times) (without custom LoopResources; without `ConnectionPool.warmup()`; equal `initialSize` and `maxSize`)     |
-| Spring WebFlux, Vertx                | **19 sec** (+5.5%)                                                                                                                                                                                                                                                                            |
+| App                                                                                                                                                                                                                                  | Duration                                                                                                          |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| Spring MVC, JDBC                                                                                                                                                                                                                     | **18 sec** (baseline)                                                                                             |
+| Spring WebFlux, R2DBC Connection: <br> &nbsp;&nbsp;(**+** LoopResources, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `...`)* <br> &nbsp;&nbsp;&nbsp;&nbsp;*(**-** LoopResources, **-** warmup, `initialSize` **!=** `maxSize`)     | <br> **25.5 sec** (+42% = 1.42 times) <br> **41.5 sec** (+130% = 2.3 times) <br> **25.5 sec** (+42% = 1.42 times) |
+| Spring WebFlux, R2DBC DatabaseClient: <br> &nbsp;&nbsp;(**+** LoopResources, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `...`)* <br> &nbsp;&nbsp;&nbsp;&nbsp;*(**-** LoopResources, **-** warmup, `initialSize` **!=** `maxSize`) | <br> **31.5 sec** (+75% = 1.75 times) <br> **51 sec** (+183% = 2.83 times) <br> **31.5 sec** (+75% = 1.75 times)  |
+| Spring WebFlux, Vertx                                                                                                                                                                                                                | **19 sec** (+5.5%)                                                                                                |
 
 ### How to Interpret R2DBC Results
 R2DBC results are a bit tricky to understand, let me explain and highlight something:
@@ -84,21 +84,13 @@ R2DBC results are a bit tricky to understand, let me explain and highlight somet
 Not tested. WebFlux results show it's not needed.
 
 ### Web App
-Both **MVC JDBC** and **WebFlux Vertx**: **51 sec** (baseline).
+For **R2DBC**, I only tested DatabaseClient. Note: for readability, **+** means with, **-** means without, `...` means all other settings not affecting the result.
 
-**R2DBC** results are more diverse, so I provide a table specifically for it with all setups. I only tested DatabaseClient.
-Note: for readability, + means with, - means without. 
-
-| WebFlux R2DBC DatabaseClient Setup                                     | Duration                          |
-|------------------------------------------------------------------------|-----------------------------------|
-| **+** LoopResources, **+** `warmup()`, `initialSize` **!=** `maxSize`  | **51 sec**                        |
-| **+** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **51 sec**                        |
-| **+** LoopResources, **-** `warmup()`, `initialSize` **!=**  `maxSize` | **51 sec**                        |
-| **+** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | **51 sec**                        |
-| **-** LoopResources, **+** `warmup()`, `initialSize` **!=**  `maxSize` | **111 sec** (+117% = 2.17 times)  |
-| **-** LoopResources, **-** `warmup()`, `initialSize` **!=**  `maxSize` | **111 sec** (+117% = 2.17 times)  |
-| **-** LoopResources, **+** `warmup()`, `initialSize` **==**  `maxSize` | **120 sec** (+135% = 2.35 times)  |
-| **-** LoopResources, **-** `warmup()`, `initialSize` **==**  `maxSize` | **120 sec** (+135% = 2.35 times)  |
+| App                                                                                                                                                                                                                                           | Duration                                                                                                        |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| Spring MVC, JDBC                                                                                                                                                                                                                              | **51 sec** (baseline)                                                                                           |
+| Spring WebFlux, R2DBC DatabaseClient: <br> &nbsp;&nbsp;(**+** LoopResources, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **!=**  `maxSize`, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **==**  `maxSize`, `...`) | <br> **51 sec** (+42% = 1.42 times) <br> **111 sec** (+117% = 2.17 times) <br> **120 sec** (+135% = 2.35 times) |
+| Spring WebFlux, Vertx                                                                                                                                                                                                                         | **51 sec**                                                                                                      |
 
 ### How to Interpret R2DBC Results
 1. Unlike with fast single-record selects, longer DB processing time of multi-record SELECTs probably makes R2DBC slowness itself unnoticeable, compared to the total processing time. So R2DBC has 4 setups where it performs normally (similarly to JDBC and Vertx) with 51 secs.
