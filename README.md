@@ -101,44 +101,32 @@ For **R2DBC**, I only tested DatabaseClient. Note: for readability, **+** means 
 
 ## Results (Connections concurrency / Threading)
 
-In all the tests above, it was visible on DB side monitoring that R2DBC **established** all `maxSize` 
-connections just fine, but it wasn't really clear how many of them were concurrently **active**,
-because the queries were too fast to build up concurrent processing on DB side. 
+Trying to find the cause of R2DBC slowness, it makes sense to check connections and threading usage. In the tests above, it was visible on DB side monitoring that R2DBC **established** all `maxSize` 
+connections just fine, but it wasn't clear how many of them were concurrently **active** - the queries completed too fast to build up concurrent processing on DB side. 
 
-You saw 4 cases with multi-record SELECTs where R2DBC performed as fast as JDBC and Vertx, but from
-single-record SELECT tests we know R2DBC is slower, so longer DB processing time of multi-record
-SELECTs just helps to hide R2DBC slowness itself. Moreover, those multi-record SELECTs were still too
-fast to simulate some heavy long query.
-
-It all means that we need to make a test specifically for concurrent connections usage. To do that,
-I just modified the single-record SELECT to select `pg_sleep(2)` as well, to simulate 2 secs
-processing time. It means in ideal case, for 100 connections pool size, for example, all 100 sessions should
+Let's do a test aimed specifically for that. I just modified the single-record query to select `pg_sleep(2)` as well, to simulate 2 secs
+processing time. It means in ideal case, for example, for 100 connections pool size, all 100 sessions should
 become seen as active, proving that all connections are used. Let's see.
 
-I also included observations on threading usage. It corresponds to what I saw in single/multi record
-SELECT tests as well.
-
 ### Standalone and Web App
+#### Threads
 
-**Vertx** - all 100 connections were active in parallel. As for threading, it used only 1 thread, like in all
-previous benchmarks above as well, but it doesn't seem to cause performance issues.
+| App                                                                                                                                                                                                                                | Threads                                                    |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
+| Spring WebFlux, R2DBC: <br> &nbsp;&nbsp;(**+** LoopResources, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **!=**  `maxSize`, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **==**  `maxSize`, `...`) | <br> **8** (as many as I configured) <br> **2** <br> **1** |
+| Vertx                                                                                                                                                                                                                              | **1**                                                      |
 
-**R2DBC**
- - **Threads**
-   - with LoopResources: **8** threads (as many as specified, in my case it's CPU_CORES);
-   - without LoopResources:
-     - `initialSize` !=  `maxSize`: **2** threads;
-     - `initialSize` ==  `maxSize`: **1** thread.
- - **Connections**
-   - all 100 connections were active in parallel; 
-   - but, without warmup() R2DBC suffered on the first run - before all SELECT Monos were completed, it used only ~40 out of 100 connections (exact number was different on each app launch, but it remained unchanged during the first run), and TPS dropped accordingly. Only on the next run all 100 connections became in use.     
+#### Connections
+
+**All applications** had **all 100 connections** established and **active**, as per max connection pool size.
+
+R2DBC had one issue though, without pool warmup it suffered on the first run - before all SELECT `Mono`s were completed, it used only ~40 out of 100 connections (exact number was different on each app launch, but it remained unchanged during the first run), and TPS dropped accordingly. Only on the next run all 100 connections became in use.
 
 ### How to Interpret R2DBC Results
-1. Because R2DBC underutilizes connections on first runs, it's a problem, for example, for specific cases where you have a cron job starting your app to run a batch of Mono queries in one go, and then shutdown - you'll must use warmup() in this case.   
-2. Otherwise, connections usage is fine and I didn't see, for example, R2DBC being stuck with a single connection (regardless of how many threads were used).  
-2. Threading - not clear whether it's an issue, because even with LoopResources R2DBC performed slow in single-record SELECTs for example. And also Vertx, for example, was able to perform fine even with 1 thread in all tests.
-5. It's not in the benchmarks, but in addition to triggering SELECTs from the single http request, I also separately tested triggering them from multiple http requests bombarded from a load testing tool, to simulate query calls triggered from different WebFlux threads - R2DBC showed the same threading usage like mentioned above.
-   - Vertx, however, used multiple threads (~ CPU cores) just fine.
+1. Threading results explain why R2DBC has a better performance with `initialSize` !=  `maxSize`, and the best performance with LoopResources - the more threads, the faster it is. However, its best case is still slower than JDBC, at least in single-record test.
+2. Unlike R2DBC, Vertx not only used just a single thread, but was also basically as fast as JDBC. 
+3. Connections usage is fine and doesn't depend on threads. However, remember to use warmup for R2DBC, otherwise things like scheduled tasks, where your app starts to run a batch of queries and exit, may be stuck slow.   
+4. It's not in the benchmarks, but in addition to triggering SELECTs from a single http request, I also separately tested multiple concurrent http requests, to simulate query calls from different WebFlux threads - R2DBC showed the same threading usage like above. Vertx, however, used multiple threads (~CPU cores) - seems like it's able to adapt.
 
 ----
 
