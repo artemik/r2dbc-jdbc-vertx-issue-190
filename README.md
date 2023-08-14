@@ -73,15 +73,16 @@ The app and database are on different hardware machines:
 
 ### How to Interpret R2DBC Results
 R2DBC results are a bit tricky to understand, let me explain and highlight something:
-1. First of all, in WebFlux, all R2DBC setups are slower than its standalone counterpart by at least ~40% (25.5 sec vs 18.3 sec).
-2. In WebFlux, without custom LoopResources, you MUST NOT run warmup(), otherwise things are slow.
-3. In WebFlux, the choice of equal vs non-equal initialSize and maxSize matters only when without custom LoopResources and without warmup - must be non-equal, otherwise things are slow. In all other cases, this choice doesn't matter.
+1. First of all, in WebFlux, all R2DBC setups are slower than its standalone counterpart by at least ~40% (25.5 sec vs 18.3 sec), and are slower than JDBC.
+2. In WebFlux, using LoopResources, regardless of other settings, gives better performance.
+2. In WebFlux, without LoopResources the performance is worse, however there is one exception where it shows the same performance as with LoopResources: (**-** LoopResources, **-** warmup, `initialSize` **!=** `maxSize`) and where it's strange that warmup MUST NOT be run.
+3. In WebFlux, the choice of `initialSize` and `maxSize` matters only when without custom LoopResources and without warmup - must be non-equal, otherwise the performance is worse. In all other cases, this choice doesn't matter.
 4. In standalone, all R2DBC settings perform the same.
 
 ## Results (SELECT 100 records)
 
 ### Standalone
-Not tested. WebFlux results show it's not needed.
+Not tested. Because WebFlux shows a case where R2DBC matches the JDBC performance, likely in standalone it will be even more so.
 
 ### Web App
 For **R2DBC**, I only tested DatabaseClient. Note: for readability, **+** means with, **-** means without, `...` means all other settings not affecting the result.
@@ -89,14 +90,14 @@ For **R2DBC**, I only tested DatabaseClient. Note: for readability, **+** means 
 | App                                                                                                                                                                                                                                           | Duration                                                                                                        |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | Spring MVC, JDBC                                                                                                                                                                                                                              | **51 sec** (baseline)                                                                                           |
-| Spring WebFlux, R2DBC DatabaseClient: <br> &nbsp;&nbsp;(**+** LoopResources, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **!=**  `maxSize`, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **==**  `maxSize`, `...`) | <br> **51 sec** (+42% = 1.42 times) <br> **111 sec** (+117% = 2.17 times) <br> **120 sec** (+135% = 2.35 times) |
+| Spring WebFlux, R2DBC DatabaseClient: <br> &nbsp;&nbsp;(**+** LoopResources, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **!=**  `maxSize`, `...`) <br> &nbsp;&nbsp;(**-** LoopResources, `initialSize` **==**  `maxSize`, `...`) | <br> **51 sec** <br> **111 sec** (+117% = 2.17 times) <br> **120 sec** (+135% = 2.35 times) |
 | Spring WebFlux, Vertx                                                                                                                                                                                                                         | **51 sec**                                                                                                      |
 
 ### How to Interpret R2DBC Results
-1. Unlike with fast single-record selects, longer DB processing time of multi-record SELECTs probably makes R2DBC slowness itself unnoticeable, compared to the total processing time. So R2DBC has 4 setups where it performs normally (similarly to JDBC and Vertx) with 51 secs.
-2. Lack of custom LoopResources drops performance ~2.17 times:
-   - and additionally having `initialSize` == `maxSize` drops it a bit more: ~2.35 times.
-3. R2DBC performs the worst in the default setup (-LoopResources, -warmup(), `initialSize`==`maxSize`).
+1. As in single-record test, the best R2DBC performance is with custom LoopResources.
+2. But now the best R2DBC performance matches the performance of JDBC and Vertx: 51 secs. Apparently, the longer DB processing time (and larger data to pull) in multi-record test makes R2DBC slowness unnoticeable compared to the total processing time.
+3. Lack of custom LoopResources drops performance at least 2.17 times:
+   - and additionally having `initialSize` == `maxSize` drops it a bit more: 2.35 times.
 
 ## Results (Connections concurrency / Threading)
 
