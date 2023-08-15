@@ -125,27 +125,18 @@ R2DBC had one issue though, without pool warmup it suffered on the first run - b
 ### How to Interpret R2DBC Results
 1. Threading results explain why R2DBC has a better performance with `initialSize` !=  `maxSize`, and the best performance with LoopResources - the more threads, the faster it is. However, its best case is still slower than JDBC, at least in single-record test.
 2. Unlike R2DBC, Vertx not only used just a single thread, but was also basically as fast as JDBC. 
-3. Connections usage is fine and doesn't depend on threads. However, remember to use warmup for R2DBC, otherwise things like scheduled tasks, where your app starts to run a batch of queries and exit, may be stuck slow.   
+3. Connections usage is fine and doesn't depend on threads. However, remember to use warmup for R2DBC, otherwise things like scheduled tasks, where your app starts to run a batch of queries and exit, may be stuck slow. Apparently, R2DBC requires zero load to trigger some internal reconfiguration.   
 4. It's not in the benchmarks, but in addition to triggering SELECTs from a single http request, I also separately tested multiple concurrent http requests, to simulate query calls from different WebFlux threads - R2DBC showed the same threading usage like above. Vertx, however, used multiple threads (~CPU cores) - seems like it's able to adapt.
 
 ----
 
 ## Conclusions
 
-### Single-record SELECT
-- R2DBC is definitely affected by WebFlux somehow, because there it performs slower than its standalone version by at least **40%**.
-- R2DBC is slower than JDBC by at least **42%** in WebFlux, and by **1.5%** in standalone.
-- Vertx DB driver performs great in both WebFlux and standalone environments, and close to JDBC (especially in standalone). It doesn't seem to be affected by WebFlux like R2DBC. Though it's still **5%** slower in WebFlux (19 secs vs 18 secs in standalone).
-
-Also:
-- WebFlux is the main usage environment for R2DBC, and the default setup there is - without custom LoopResources; without `ConnectionPool.warmup()` - because these things aren't mentioned in the docs. And likely you'll have equal `initialSize` and `maxSize`. In this case, R2DBC will be slower than JDBC by **130%**, i.e. **2.3 times**.
-- Even more so, in WebFlux you'll probably use the default Spring's DatabaseClient - then R2DBC will be slower than JDBC by **183%**, i.e. **2.83 times**.
-  - However, DatabaseClient is something on top of R2DBC, and even though it's not a full ORM, a more fair comparison would probably be to Hibernate than raw JDBC (Hibernate wasn't tested here). Anyway, DatabaseClient still seems too slow, and I expect Hibernate to perform better (especially with projections/DTOs), even without 1st level Hibernate cache.
-- Weird case - in WebFlux, without custom LoopResources but with (!) `ConnectionPool.warmup()` (who is supposed to make things faster), the performance drops from 25.5 secs to 41.5 secs. Without warmup - it's fine.
-- Without `ConnectionPool.warmup()`, the very first R2DBC run is several times slower than subsequent ones. It's the whole full first run - it doesn't speed up to the end or anything like that (even though I see all connections being established on DB side). Apparently, it means R2DBC needs zero load to reconfigure something internally. In theory, it means if you chip in your app into high load cluster without warmup (manual, not just R2DBC `ConnectionPool.warmup()`), your app may be very slow forever. It doesn't happen to Vertx.
-
-### Multi-record SELECT
-- R2DBC is affected by WebFlux here as well. Details are mentioned in "How to Interpret R2DBC Results" sections above.
-- Vertx has no issues.
+1. In standalone apps, R2DBC seems fine.
+2. However, in **WebFlux R2DBC has some unknown issues**. Part of that can be mitigated by writing a custom LoopResources class to force R2DBC to use more threads. But it's still slower than JDBC, at least in single-record test. The issue should be somewhere in the driver implementation, because Vert.x is another reactive driver example based on Netty, but it doesn't have any issues, even using a single thread.
+3. Neither LoopResources nor `ConnectionPool.warmup()` nor `initialSize`-vs-`maxSize` are mentioned in the r2dbc-pool documentation, not even counting that you need to know how to write a LoopResources class that isn't just a setting to enable. So without knowing this issues in advance, if you just follow the documentation, your performance with WebFlux will be around **2 times lower than JDBC**, generally speaking.
+4. R2DBC is positioned as the main DB driver for WebFlux, but apparently it can't work properly in its main usage environment.
+5. The issue is apparently in r2dbc-pool, so all drivers might be affected. Obviously, most people do use pools.
+6. Vertx DB driver performs great in both WebFlux and standalone environments, and close to JDBC. This is a good alternative, especially considering development of [Hibernate Reactive](https://hibernate.org/reactive/) built on that.
 
 Lastly, this benchmark is not an all-around drivers comparison, however the R2DBC issues observed here seem to be fundamental and therefore affecting different types of queries/workloads.    
