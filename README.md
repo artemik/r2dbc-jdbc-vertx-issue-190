@@ -48,11 +48,11 @@ The app and database are on different hardware machines:
 
 ## Measurements
 - I let each app run for several minutes (for all things to stabilize), and then took average of last 10 durations.
-- Because even the average fluctuates a bit, and because I'd not like to make strong judgements based on +-500ms difference (which is only ~2% of 20 secs, for example), and because I'm interested more about magnitude differences - I rounded the results of all R2DBC setups between each other within ~500ms, and highlighted separately only those that differ a lot. That's why all 8 R2DBC setup permutations (with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize`) mostly share a single measurement result, and only a few cases are displayed separately.
+- In each R2DBC test, there were actually 8 R2DBC setup permutations tested: with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize`. I'd not like to make strong judgements based on +-500ms difference (which is only ~2% of 20 secs, for example), I'm interested more about magnitude differences. Therefore, I rounded their results between each other within ~500ms for simplicity. That's why they mostly share a single measurement result, and only a few cases that differ a lot are displayed separately.
 
 ----
 ## Results (SELECT single record)
-**Note:** In all R2DBC tests below, all 8 setup permutations were tested: with/without custom LoopResources; with/without `ConnectionPool.warmup()`; equal/non-equal `initialSize` and `maxSize` - they're displayed as one shared measurement, only those that differ are displayed separately. 
+**Note**: for readability, **+** means with, **-** means without, `...` means all other settings not affecting the result. 
 ### Standalone
 
 | App                  | Duration              |
@@ -85,7 +85,7 @@ R2DBC results are a bit tricky to understand, let me explain and highlight somet
 Not tested. Because WebFlux shows a case where R2DBC matches the JDBC performance, likely in standalone it will be even more so.
 
 ### Web App
-For **R2DBC**, I only tested DatabaseClient. Note: for readability, **+** means with, **-** means without, `...` means all other settings not affecting the result.
+For **R2DBC**, I only tested DatabaseClient. **Note**: for readability, **+** means with, **-** means without, `...` means all other settings not affecting the result.
 
 | App                                                                                                                                                                                                                                           | Duration                                                                                                        |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
