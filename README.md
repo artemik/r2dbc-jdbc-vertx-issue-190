@@ -140,3 +140,5 @@ R2DBC had one issue though, without pool warmup it suffered on the first run - b
 6. Vertx DB driver performs great in both WebFlux and standalone environments, and close to JDBC. This is a good alternative, especially considering development of [Hibernate Reactive](https://hibernate.org/reactive/) built on that.
 
 Lastly, this benchmark is not an all-around drivers comparison, however the R2DBC issues observed here seem to be fundamental and therefore affecting different types of queries/workloads.    
+
+This article on Medium: https://medium.com/@temanovikov/r2dbc-vs-jdbc-vs-vert-x-not-so-fast-benchmark-c0a9fcabb274
